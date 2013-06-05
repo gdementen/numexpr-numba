@@ -11,7 +11,7 @@
 import os
 import subprocess
 
-from numexpr.interpreter import _set_num_threads
+#from numexpr.interpreter import _set_num_threads
 from numexpr import use_vml
 
 if use_vml:
@@ -22,7 +22,7 @@ if use_vml:
 def get_vml_version():
     """Get the VML/MKL library version."""
     if use_vml:
-        return _get_vml_version()
+        raise NotImplementedError()
     else:
         return None
 
@@ -73,6 +73,7 @@ def set_vml_num_threads(nthreads):
     if use_vml:
         _set_vml_num_threads(nthreads)
 
+num_threads = 1
 
 def set_num_threads(nthreads):
     """
@@ -90,7 +91,11 @@ def set_num_threads(nthreads):
     with common expresions like `(x+1)*(x-2)`, while Numexpr's one
     can.
     """
-    old_nthreads = _set_num_threads(nthreads)
+    global num_threads
+
+    # old_nthreads = _set_num_threads(nthreads)
+    old_nthreads = num_threads
+    num_threads = nthreads
     return old_nthreads
 
 

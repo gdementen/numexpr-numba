@@ -20,6 +20,7 @@ import meta
 
 from numexpr import expressions, use_vml, is_cpu_amd_intel
 from numexpr.utils import CacheDict
+from numexpr import utils
 
 # Declare a double type that does not exist in Python space
 double = np.double
@@ -330,8 +331,6 @@ def precompile(ex, signature=(), context={}):
     
     dt = getattr(np, ex.astKind)
 
-    numthreads = 2
-
     if ex.value in ('sum', 'prod'):
         reduction_func = getattr(np, ex.value)
         args = ex.children
@@ -407,6 +406,7 @@ def precompile(ex, signature=(), context={}):
             return out
 
         def func_mt(*args, **kwargs):
+            numthreads = utils.num_threads
             shape = args[0].shape
             out = kwargs.pop('out', None)
             if out is None:
@@ -426,7 +426,6 @@ def precompile(ex, signature=(), context={}):
 
             chunks = [[arg[i * chunklen:(i + 1) * chunklen] for arg in args]
                       for i in range(numthreads)]
-
             threads = [threading.Thread(target=inner_func, args=chunk)
                        for chunk in chunks[:-1]]
             for thread in threads:
