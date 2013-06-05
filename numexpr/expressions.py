@@ -44,8 +44,6 @@ if sys.version_info[0] > 2:
 scalar_constant_types = tuple(scalar_constant_types)
 
 
-from numexpr import interpreter
-
 class Expression(object):
     def __init__(self):
         object.__init__(self)
@@ -522,7 +520,12 @@ class OpNode(ExpressionNode):
         op = self.value
         args = [c.toPython() for c in self.children]
         if op in unaryops:
-            return ast.UnaryOp(unaryops[op](), args[0])
+            arg = args[0]
+            # force conversion to int to workaround numba #238
+            # it fixes age * ~gender but breaks count(~gender) :(
+            # if op == 'invert':
+                # arg = ast.BinOp(arg, ast.Add(), ast.Num(0))
+            return ast.UnaryOp(unaryops[op](), arg)
         elif op in boolops:
             return ast.BoolOp(boolops[op](), args)
         elif op in cmpops:
