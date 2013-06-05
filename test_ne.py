@@ -1,9 +1,11 @@
 import numexpr as ne
 import numpy as np
 from timeit import repeat
-from numba import autojit
+from numba import autojit, __version__
 import meta
 import ast
+
+print "using numba", __version__
 
 size = (1000, 1000)
 
@@ -51,12 +53,12 @@ sum = np.sum
 # abs_nb = autojit(__expr_func__)
 
 # expr = 'where((a <= 5) & (~(c > 2)), -b + 3 * b ** 60 + b ** 0 - 4.3 * c ** 3, 4 * log(b) * b - 3.3 * (c % 5) * exp(c) * c)'
-# expr = 'where((a <= 5) & (~(c > 2)), -b + 3 * b + b ** 0 - 4.3 * c ** 3, 4 * log(b) * b - 3.3 * (c % 5) * exp(c) * c)'
+expr = 'where((a <= 5) & (~(c > 2)), -b + 3 * b + b ** 0 - 4.3 * c ** 3, 4 * log(b) * b - 3.3 * (c % 5) * exp(c) * c)'
 # expr = 'abs(a - c + b)'
 # expr = '2.1 * a + 3.2 * b * b + 4.3 * c * c * c'
 # expr = 'sum(a + b + c, axis=0)'
 # expr = 'a & b & c' # works
-expr = 'sum(a & b & c)' # fails
+# expr = 'sum(a & b & c)' # fails
 # expr = 'sum(b)'
 
 def np_nopow(a, b, c):
@@ -66,13 +68,13 @@ def ne_nopow(a, b, c):
     return ne.evaluate(expr) #, out=r)
     
 a = np.random.randint(10, size=size)
-a = a < 5
+# a = a < 5
 b = np.random.rand(*size)
-b = b < 0.5
+# b = b < 0.5
 c = np.random.randint(10, size=size)
-c = c < 5
+# c = c < 5
 
-r = a & b & c
+# r = a & b & c
 def info(a):
     print
     print "shape", a.shape, "dtype", a.dtype
@@ -98,4 +100,6 @@ def info(a):
 
 
 correct = timefunc(None, np_nopow, a, b, c)
+timefunc(correct, ne_nopow, a, b, c)
+ne.set_num_threads(1)
 timefunc(correct, ne_nopow, a, b, c)
