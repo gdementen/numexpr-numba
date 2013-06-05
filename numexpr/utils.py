@@ -11,13 +11,9 @@
 import os
 import subprocess
 
-#from numexpr.interpreter import _set_num_threads
 from numexpr import use_vml
 
-if use_vml:
-    from numexpr.interpreter import (
-        _get_vml_version, _set_vml_accuracy_mode, _set_vml_num_threads)
-
+num_threads = 1        
 
 def get_vml_version():
     """Get the VML/MKL library version."""
@@ -47,13 +43,7 @@ def set_vml_accuracy_mode(mode):
     Returns old accuracy settings.
     """
     if use_vml:
-        acc_dict = {None: 0, 'low': 1, 'high': 2, 'fast': 3}
-        acc_reverse_dict = {1: 'low', 2: 'high', 3: 'fast'}
-        if mode not in acc_dict.keys():
-            raise ValueError(
-                "mode argument must be one of: None, 'high', 'low', 'fast'")
-        retval = _set_vml_accuracy_mode(acc_dict.get(mode, 0))
-        return acc_reverse_dict.get(retval)
+        raise NotImplementedError()
     else:
         return None
 
@@ -71,10 +61,9 @@ def set_vml_num_threads(nthreads):
     for more info about it.
     """
     if use_vml:
-        _set_vml_num_threads(nthreads)
+        raise NotImplementedError()
 
-num_threads = 1
-
+        
 def set_num_threads(nthreads):
     """
     Sets a number of threads to be used in operations.
@@ -93,7 +82,6 @@ def set_num_threads(nthreads):
     """
     global num_threads
 
-    # old_nthreads = _set_num_threads(nthreads)
     old_nthreads = num_threads
     num_threads = nthreads
     return old_nthreads
