@@ -209,9 +209,6 @@ def where_func(a, b, c):
 def encode_axis(axis):
     if isinstance(axis, ConstantNode):
         axis = axis.value
-    # if axis is None:
-        # axis = interpreter.allaxes
-    # else:
     if axis is not None:
         if axis < 0:
             raise ValueError("negative axis are not supported")

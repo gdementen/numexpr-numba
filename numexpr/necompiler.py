@@ -364,22 +364,7 @@ def precompile(ex, signature=(), context={}):
             shape = args[0].shape
             args = [a.ravel() for a in args]
             tmp_out = np.empty(shape, dtype=dt)
-            x = tmp_out.ravel()
-            # print "dtype", dt, tmp_out.dtype, x.dtype
-            # print "shape", shape, tmp_out.shape, x.shape
-            # print "flags", "/", tmp_out.flags, x.flags
-            inner_func(x, *args)
-            def info(a):
-                print
-                print "shape", a.shape, "dtype", a.dtype
-                print "flags"
-                print a.flags
-                print a
-                print "sum", np.sum(a)
-
-            # info(tmp_out)
-            # tmp2 = tmp_out.astype(np.uint8, copy=False)
-            # info(tmp2)
+            inner_func(tmp_out.ravel(), *args)
             
             # workaround for numba bug
             if dt is bool:
@@ -471,12 +456,6 @@ def NumExpr(ex, signature=(), copy_args=(), **kwargs):
 
     context = getContext(kwargs, frame_depth=1)
     return precompile(ex, signature, context)
-   # threeAddrProgram, inputsig, tempsig, constants, input_names = \
-                      # precompile(ex, signature, context)
-    # program = compileThreeAddrForm(threeAddrProgram)
-    # return interpreter.NumExpr(inputsig.encode('ascii'),
-                               # tempsig.encode('ascii'),
-                               # program, constants, input_names)
 
 
 def disassemble(nex):
@@ -484,6 +463,7 @@ def disassemble(nex):
     Given a NumExpr object, return a list which is the program disassembled.
     """
     raise NotImplementedError()
+
 
 def getType(a):
     kind = a.dtype.kind
