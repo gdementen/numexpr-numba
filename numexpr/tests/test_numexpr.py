@@ -24,7 +24,7 @@ from numpy.testing import *
 from numpy import shape, allclose, array_equal, ravel, isnan, isinf
 
 import numexpr
-from numexpr import E, NumExpr, evaluate, disassemble, use_vml
+from numexpr import E, NumExpr, evaluate, use_vml
 
 import unittest
 TestCase = unittest.TestCase
@@ -60,7 +60,7 @@ class test_numexpr(TestCase):
         assert_array_equal(x, y)
 
     def test_rational_expr(self):
-        func = NumExpr((E.a + 2.0*E.b) / (1 + E.a + 4*E.b*E.b))
+        func = NumExpr((E.a + 2*E.b) / (1 + E.a + 4*E.b*E.b))
         a = arange(1e6)
         b = arange(1e6) * 0.1
         x = (a + 2*b) / (1 + a + 4*b*b)
@@ -68,22 +68,6 @@ class test_numexpr(TestCase):
         assert_array_almost_equal(x, y)
 
     def test_reductions(self):
-        # Check that they compile OK.
-        assert_equal(disassemble(
-            NumExpr("sum(x**2+2, axis=None)", [('x', double)])),
-                     [(b'mul_ddd', b't3', b'r1[x]', b'r1[x]'),
-                      (b'add_ddd', b't3', b't3', b'c2[2.0]'),
-                      (b'sum_ddn', b'r0', b't3', None)])
-        assert_equal(disassemble(
-            NumExpr("sum(x**2+2, axis=1)", [('x', double)])),
-                     [(b'mul_ddd', b't3', b'r1[x]', b'r1[x]'),
-                      (b'add_ddd', b't3', b't3', b'c2[2.0]'),
-                      (b'sum_ddn', b'r0', b't3', 1)])
-        assert_equal(disassemble(
-            NumExpr("prod(x**2+2, axis=2)", [('x', double)])),
-                     [(b'mul_ddd', b't3', b'r1[x]', b'r1[x]'),
-                      (b'add_ddd', b't3', b't3', b'c2[2.0]'),
-                      (b'prod_ddn', b'r0', b't3', 2)])
         # Check that full reductions work.
         x = zeros(1e5)+.01   # checks issue #41
         assert_allclose(evaluate("sum(x+2,axis=None)"), sum(x+2,axis=None))
@@ -152,11 +136,6 @@ class test_numexpr(TestCase):
             pass
         else:
             raise ValueError("should raise exception!")
-
-    def test_r0_reuse(self):
-        assert_equal(disassemble(NumExpr("x * x + 2", [('x', double)])),
-                    [(b'mul_ddd', b'r0', b'r1[x]', b'r1[x]'),
-                     (b'add_ddd', b'r0', b'r0', b'c2[2.0]')])
 
 
 class test_numexpr1(test_numexpr):
