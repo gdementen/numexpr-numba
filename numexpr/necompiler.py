@@ -163,7 +163,7 @@ def stringToExpression(s, types, context):
     return ex
 
 
-def getInputOrder(ast, input_order=None):
+def getInputOrder(ast):
     """Derive the input order of the variables in an expression.
     """
     variables = {}
@@ -171,16 +171,7 @@ def getInputOrder(ast, input_order=None):
         variables[a.value] = a
     variable_names = set(variables.keys())
 
-    if input_order:
-        if variable_names != set(input_order):
-            raise ValueError(
-                "input names (%s) don't match those found in expression (%s)"
-                % (input_order, variable_names))
-
-        ordered_names = input_order
-    else:
-        ordered_names = list(variable_names)
-        ordered_names.sort()
+    ordered_names = sorted(variable_names)
     ordered_variables = [variables[v] for v in ordered_names]
     return ordered_variables
 
@@ -495,7 +486,7 @@ def getType(a):
 def getExprNames(text, context):
     ex = stringToExpression(text, {}, context)
     ast = expressionToAST(ex)
-    input_order = getInputOrder(ast, None)
+    input_order = getInputOrder(ast)
     #try to figure out if vml operations are used by expression
     if not use_vml:
         ex_uses_vml = False
@@ -601,4 +592,4 @@ def evaluate(ex, local_dict=None, global_dict=None,
                       NumExpr(ex, signature, **context)
     kwargs = {'out': out, 'order': order, 'casting': casting,
               'ex_uses_vml': ex_uses_vml}
-    return compiled_ex(*arguments) #, **kwargs)
+    return compiled_ex(*arguments, **kwargs)
