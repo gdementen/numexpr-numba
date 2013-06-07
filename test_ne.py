@@ -1,5 +1,7 @@
 import numexpr as ne
+from numexpr import NumExpr, E
 import numpy as np
+from numpy.testing import *
 from timeit import repeat
 from numba import autojit, __version__
 import meta
@@ -53,25 +55,32 @@ sum = np.sum
 # abs_nb = autojit(__expr_func__)
 
 # expr = 'where((a <= 5) & (~(c > 2)), -b + 3 * b ** 60 + b ** 0 - 4.3 * c ** 3, 4 * log(b) * b - 3.3 * (c % 5) * exp(c) * c)'
-expr = 'where((a <= 5) & (~(c > 2)), -b + 3 * b + b ** 0 - 4.3 * c ** 3, 4 * log(b) * b - 3.3 * (c % 5) * exp(c) * c)'
+# expr = 'where((a <= 5) & (~(c > 2)), -b + 3 * b + b ** 0 - 4.3 * c ** 3, 4 * log(b) * b - 3.3 * (c % 5) * exp(c) * c)'
 # expr = 'abs(a - c + b)'
 # expr = '2.1 * a + 3.2 * b * b + 4.3 * c * c * c'
 # expr = 'sum(a + b + c, axis=0)'
 # expr = 'a & b & c' # works
 # expr = 'sum(a & b & c)' # fails
 # expr = 'sum(b)'
+expr = '(a + 1) % (b + 3)'
 
-def np_nopow(a, b, c):
+def np_nopow(a, b): #, b, c):
     return eval(expr)
 
-def ne_nopow(a, b, c):
+def ne_nopow(a, b): #, b, c):
     return ne.evaluate(expr) #, out=r)
+
+array_size = 100
+a = np.arange(array_size, dtype=np.int) #[::2]
+b = np.arange(array_size, dtype=np.float32) #/ array_size
     
-a = np.random.randint(10, size=size)
+# a = np.arange(100.0)
+
+# a = np.random.randint(10, size=size)
 # a = a < 5
-b = np.random.rand(*size)
+# b = np.random.rand(*size)
 # b = b < 0.5
-c = np.random.randint(10, size=size)
+# c = np.random.randint(10, size=size)
 # c = c < 5
 
 # r = a & b & c
@@ -99,7 +108,25 @@ def info(a):
 # c = np.random.rand(size)
 
 
-correct = timefunc(None, np_nopow, a, b, c)
-timefunc(correct, ne_nopow, a, b, c)
+# correct = timefunc(None, np_nopow, a)
+# timefunc(correct, ne_nopow, a)
+# print "with one thread"
+# ne.set_num_threads(1)
+# timefunc(correct, ne_nopow, a)
+
+correct = timefunc(None, np_nopow, a, b)
+timefunc(correct, ne_nopow, a, b)
+print "with one thread"
 ne.set_num_threads(1)
-timefunc(correct, ne_nopow, a, b, c)
+timefunc(correct, ne_nopow, a, b)
+
+# correct = timefunc(None, np_nopow, a, b, c)
+# timefunc(correct, ne_nopow, a, b, c)
+# print "with one thread"
+# ne.set_num_threads(1)
+# timefunc(correct, ne_nopow, a, b, c)
+
+# func = NumExpr(E.a)
+# x = np.arange(100.0)
+# y = func(x)
+# assert_array_equal(x, y)
