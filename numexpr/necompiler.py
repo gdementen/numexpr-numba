@@ -390,6 +390,10 @@ def precompile(ex, signature=(), context={}):
         def func_mt(*args, **kwargs):
             numthreads = utils.num_threads
             shape = args[0].shape
+            if any(arg.shape != shape for arg in args[1:]):
+                args = np.broadcast_arrays(*args) 
+                shape = args[0].shape
+            
             out = kwargs.pop('out', None)
             if out is None:
                 out = np.empty(shape, dtype=dt)

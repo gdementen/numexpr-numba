@@ -62,26 +62,34 @@ sum = np.sum
 # expr = 'a & b & c' # works
 # expr = 'sum(a & b & c)' # fails
 # expr = 'sum(b)'
-expr = '(a + 1) % (b + 3)'
+# expr = '(a + 1) % (b + 3)'
+expr = 'a * b'
 
 def np_nopow(a, b): #, b, c):
     return eval(expr)
 
 def ne_nopow(a, b): #, b, c):
-    return ne.evaluate(expr) #, out=r)
+    # res = ne.evaluate(expr, out=r)
+    # assert res is r
+    # return res
+    return ne.evaluate(expr)
 
-array_size = 100
-a = np.arange(array_size, dtype=np.int) #[::2]
-b = np.arange(array_size, dtype=np.float32) #/ array_size
+# array_size = 100
+# a = np.arange(array_size, dtype=np.int) #[::2]
+# b = np.arange(array_size, dtype=np.float32) #/ array_size
     
 # a = np.arange(100.0)
 
 # a = np.random.randint(10, size=size)
+a = np.random.rand(*size)
 # a = a < 5
+b = np.arange(1000, dtype=np.float64)
 # b = np.random.rand(*size)
 # b = b < 0.5
 # c = np.random.randint(10, size=size)
 # c = c < 5
+
+# r = np.empty(size, dtype=np.float64)
 
 # r = a & b & c
 def info(a):
