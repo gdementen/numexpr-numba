@@ -430,6 +430,17 @@ class ExpressionNode(object):
     __lt__ = binop('gt', reversed=True, kind='bool')
     __le__ = binop('ge', reversed=True, kind='bool')
 
+    def postorderWalk(self):
+        for c in self.children:
+            for w in c.postorderWalk():
+                yield w
+        yield self
+
+    def allOf(self, *astTypes):
+        astTypes = set(astTypes)
+        for w in self.postorderWalk():
+            if w.astType in astTypes:
+                yield w
 
 
 class LeafNode(ExpressionNode):

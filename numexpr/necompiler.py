@@ -18,7 +18,7 @@ import numpy as np
 from numba import autojit
 import meta
 
-from numexpr import expressions, use_vml, is_cpu_amd_intel
+from numexpr import expressions, use_vml
 from numexpr.utils import CacheDict
 from numexpr import utils
 
@@ -184,6 +184,9 @@ def getInputOrder(ast, input_order=None):
     ordered_variables = [variables[v] for v in ordered_names]
     return ordered_variables
 
+def get_argnames(ex):
+    return sorted({a.value for a in ex.allOf('variable')})
+    
 
 context_info = [
     ('optimization', ('none', 'moderate', 'aggressive'), 'aggressive'),
@@ -307,7 +310,7 @@ py_funcs = {
 # numgenerated = 0
 
 def ast_func_to_func(ast_func):
-    global numgenerated
+    # global numgenerated
 
     code = compile(ast_func, '<expr>', 'exec')
     context = {'np': np}
@@ -324,10 +327,13 @@ def precompile(ex, signature=(), context={}):
     """Compile the expression to an intermediate form.
     """
     types = dict(signature)
-    input_order = [name for (name, type_) in signature]
-
     if isinstance(ex, (str, unicode)):
         ex = stringToExpression(ex, types, context)
+
+    if signature:
+        argnames = [name for (name, type_) in signature]
+    else:
+        argnames = get_argnames(ex)
     
     dt = getattr(np, ex.astKind)
 
@@ -344,7 +350,7 @@ def precompile(ex, signature=(), context={}):
 
     ast_expr = ex.toPython()
     # print ast.dump(ast_expr, annotate_fields=False)
-    ast_func = ast_expr_to_ast_func(ast_expr, input_order)
+    ast_func = ast_expr_to_ast_func(ast_expr, argnames)
     # print ast.dump(ast_func, annotate_fields=False)
     inner_func = autojit(ast_func_to_func(ast_func), nopython=True)
 
