@@ -207,15 +207,14 @@ def where_func(a, b, c):
     return FuncNode('where', [a,b,c])
 
 def encode_axis(axis):
-    if isinstance(axis, ConstantNode):
-        axis = axis.value
     if axis is not None:
         if axis < 0:
             raise ValueError("negative axis are not supported")
         if axis > 254:
             raise ValueError("cannot encode axis")
-    return RawNode(axis)
+    return ConstantNode(axis)
 
+#XXX: use ophelper (to convert args to ConstantNode)?
 def sum_func(a, axis=None):
     axis = encode_axis(axis)
     #XXX: I suspect these two if are swapped (see prod_func below)
@@ -454,22 +453,6 @@ class VariableNode(LeafNode):
     def toPython(self):
         return ast.Name(self.value, ast.Load())
         
-
-class RawNode(object):
-    """Used to pass raw integers to interpreter.
-    For instance, for selecting what function to use in func1.
-    Purposely don't inherit from ExpressionNode, since we don't wan't
-    this to be used for anything but being walked.
-    """
-    astType = 'raw'
-    astKind = 'none'
-    def __init__(self, value):
-        self.value = value
-        self.children = ()
-    def __str__(self):
-        return 'RawNode(%s)' % (self.value,)
-    __repr__ = __str__
-
 
 class ConstantNode(LeafNode):
     astType = 'constant'
