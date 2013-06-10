@@ -51,78 +51,12 @@ scalar_constant_kinds = kind_to_typecode.keys()
 
 
 class ASTNode(object):
-    """Abstract Syntax Tree node.
-
-    Members:
-
-    astType      -- type of node (op, constant, variable, raw, or alias)
-    astKind      -- the type of the result (bool, float, etc.)
-    value        -- value associated with this node.
-                    An opcode, numerical value, a variable name, etc.
-    children     -- the children below this node
-    reg          -- the register assigned to the result for this node.
-    """
-    cmpnames = ['astType', 'astKind', 'value', 'children']
     def __init__(self, astType='generic', astKind='unknown',
                  value=None, children=()):
-        object.__init__(self)
-        self.astType = astType
-        self.astKind = astKind
-        self.value = value
-        self.children = tuple(children)
-        self.reg = None
-        # print self
-
-    def __eq__(self, other):
-        if self.astType == 'alias':
-            self = self.value
-        if other.astType == 'alias':
-            other = other.value
-        if not isinstance(other, ASTNode):
-            return False
-        for name in self.cmpnames:
-            if getattr(self, name) != getattr(other, name):
-                return False
-        return True
-
-    def __hash__(self):
-        if self.astType == 'alias':
-            self = self.value
-        return hash((self.astType, self.astKind, self.value, self.children))
-
-    def __str__(self):
-        return 'AST(%s, %s, %s, %s, %s)' % (self.astType, self.astKind,
-                                            self.value, self.children, self.reg)
-    def __repr__(self): return '<AST object at %s>' % id(self)
-
-    def key(self):
-        return (self.astType, self.astKind, self.value, self.children)
-
-    def typecode(self):
-        return kind_to_typecode[self.astKind]
-        
-    def postorderWalk(self):
-        for c in self.children:
-            for w in c.postorderWalk():
-                yield w
-        yield self
-
-    def allOf(self, *astTypes):
-        astTypes = set(astTypes)
-        for w in self.postorderWalk():
-            if w.astType in astTypes:
-                yield w
+        raise NotImplementedError()
 
 def expressionToAST(ex):
-    """Take an expression tree made out of expressions.ExpressionNode,
-    and convert to an AST tree.
-
-    This is necessary as ExpressionNode overrides many methods to act
-    like a number.
-    """
-    return ASTNode(ex.astType, ex.astKind, ex.value,
-                   [expressionToAST(c) for c in ex.children])
-
+    raise NotImplementedError()
 
 def typeCompileAst(ast):
     raise NotImplementedError()
@@ -498,8 +432,7 @@ def getExprNames(text, context):
         return argnames, ex_uses_vml
     else:
         # try to figure out if vml operations are used by expression
-        ast = expressionToAST(ex)
-        ex_uses_vml = any(node.value in vml_funcs for node in ast.allOf('op'))
+        ex_uses_vml = any(node.value in vml_funcs for node in ex.allOf('op'))
         return argnames, ex_uses_vml
 
 
