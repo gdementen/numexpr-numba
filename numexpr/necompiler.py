@@ -163,18 +163,6 @@ def stringToExpression(s, types, context):
     return ex
 
 
-def getInputOrder(ast):
-    """Derive the input order of the variables in an expression.
-    """
-    variables = {}
-    for a in ast.allOf('variable'):
-        variables[a.value] = a
-    variable_names = set(variables.keys())
-
-    ordered_names = sorted(variable_names)
-    ordered_variables = [variables[v] for v in ordered_names]
-    return ordered_variables
-
 def get_argnames(ex):
     return sorted({a.value for a in ex.allOf('variable')})
     
@@ -298,20 +286,13 @@ py_funcs = {
     'ones_like': np.ones_like,
 }
     
-# numgenerated = 0
 
 def ast_func_to_func(ast_func):
-    # global numgenerated
-
     code = compile(ast_func, '<expr>', 'exec')
     context = {'np': np}
     context.update(py_funcs)
     exec code in context
     return context['__expr_func__']
-    # func = context['__expr_func__']
-    # func.__name__ = 'func_%d' % numgenerated
-    # numgenerated += 1
-    # return func
 
 
 def precompile(ex, signature=(), context={}):
@@ -319,6 +300,9 @@ def precompile(ex, signature=(), context={}):
     """
     types = dict(signature)
     if isinstance(ex, (str, unicode)):
+        #XXX: we might want to work directly with (python's) AST
+        # and do numexpr transformations directly at that level instead of going
+        # str -> Expression -> ast -> ...
         ex = stringToExpression(ex, types, context)
 
     if signature:
@@ -326,6 +310,7 @@ def precompile(ex, signature=(), context={}):
     else:
         argnames = get_argnames(ex)
     
+    #FIXME: this does not work for "bytes"
     dt = getattr(np, ex.astKind)
 
     if ex.value in ('sum', 'prod'):
@@ -346,8 +331,8 @@ def precompile(ex, signature=(), context={}):
     inner_func = autojit(ast_func_to_func(ast_func), nopython=True)
 
     if reduction_func is not None:
-        # this is a hack. To do it (more) correctly, I would need to use a
-        # different template_func:
+        # this is a hack. To do it (more) correctly (with multithreading),
+        # I would need to use a different template_func:
 
         # for i in range(len(__result__)):
             # __result__[0] += __expr_placeholder__
@@ -376,6 +361,7 @@ def precompile(ex, signature=(), context={}):
             # we cannot use order="K" which is most efficient, in case arguments
             # have not the same in-memory layout, because we need the same
             # target memory layout for all arguments.
+            #XXX: can't we test for that and convert only if really necessary?
             args = [a.ravel() for a in args]
             out = kwargs.pop('out', None)
             if out is None:
@@ -403,6 +389,7 @@ def precompile(ex, signature=(), context={}):
             # we cannot use order="K" which is most efficient, in case arguments
             # have not the same in-memory layout, because we need the same
             # target memory layout for all arguments.
+            #XXX: can't we test for that and convert only if really necessary?
             args = [out.ravel()] + [a.ravel() for a in args]
             length = len(args[0])
             chunklen = (length + 1) // numthreads
@@ -487,30 +474,33 @@ def getType(a):
     raise ValueError("unkown type %s" % a.dtype.name)
 
 
+#XXX: no tan? log10? fmod?
+#XXX: what is "inv"?
+vml_funcs = set([
+    'sqrt',
+    'sin', 'cos',
+    'arcsin', 'arccos', 'arctan',
+    'sinh', 'cosh', 'tanh',
+    'arcsinh', 'arccosh', 'arctanh',
+    'arctan2',
+    'log', 'log1p',
+    'exp', 'expm1',
+    'abs',
+    'pow', 'div',
+    'inv',
+])
+    
 def getExprNames(text, context):
     ex = stringToExpression(text, {}, context)
-    ast = expressionToAST(ex)
-    input_order = getInputOrder(ast)
-    #try to figure out if vml operations are used by expression
+    argnames = get_argnames(ex)
     if not use_vml:
         ex_uses_vml = False
+        return argnames, ex_uses_vml
     else:
-        for node in ast.postorderWalk():
-            if node.astType == 'op' \
-                   and node.value in ['sin', 'cos', 'exp', 'log',
-                                      'expm1', 'log1p',
-                                      'pow', 'div',
-                                      'sqrt', 'inv',
-                                      'sinh', 'cosh', 'tanh',
-                                      'arcsin', 'arccos', 'arctan',
-                                      'arccosh', 'arcsinh', 'arctanh',
-                                      'arctan2', 'abs']:
-                ex_uses_vml = True
-                break
-        else:
-            ex_uses_vml = False
-
-    return [a.value for a in input_order], ex_uses_vml
+        # try to figure out if vml operations are used by expression
+        ast = expressionToAST(ex)
+        ex_uses_vml = any(node.value in vml_funcs for node in ast.allOf('op'))
+        return argnames, ex_uses_vml
 
 
 # Dictionaries for caching variable names and compiled expressions
