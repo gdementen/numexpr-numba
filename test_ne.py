@@ -75,15 +75,16 @@ sum = np.sum
 # expr = 'a >= b'
 # expr = 'a**2 + b**2 + 2*a*b'
 # expr = 'a*a + b*b + 2*a*b'
-expr = 'a / b'
+# expr = 'a / b'
+expr = 'a != a'
 
-# def func_np(a):
-def func_np(a, b):
+def func_np(a):
+# def func_np(a, b):
 # def func_np(a, b, c):
     return eval(expr)
 
-# def func_ne(a):
-def func_ne(a, b):
+def func_ne(a):
+# def func_ne(a, b):
 # def func_ne(a, b, c):
     # res = ne.evaluate(expr, out=r)
     # assert res is r
@@ -116,22 +117,21 @@ size = (10,)
 # - withnan: sum([1.0, nan, 2.0], skip_na=False)
 # - qshow(withnan)
 # - assertTrue(withnan != withnan)
-# a = np.array([1.0, np.nan, 2.0])
+a = np.array([1.0, np.nan, 2.0])
 
-# x = func_ne(a)
-# print "nan?", x != x
-# y = ne.evaluate("x != x")
-# print "nan in numba?", y
+print "nan?", a != a
+y = ne.evaluate("a != a")
+print "nan in numba?", y
 
 
 # a = np.random.randint(10, size=size)
 # a = np.arange(5)
-a = np.array([0, 1, 0, 3, 2]) 
+# a = np.array([0, 1, 0, 3, 2]) 
 # a = np.random.rand(*size)
 # a = a < 5
 
 # b = np.random.randint(10, size=size)
-b = np.array([0, 0, 1, 2, 3])
+# b = np.array([0, 0, 1, 2, 3])
 # b = np.arange(1000, dtype=np.float64)
 # b = np.random.rand(*size)
 # b = b < 0.5
@@ -172,11 +172,11 @@ def info(a):
 # ne.set_num_threads(1)
 # timefunc(correct, func_ne, a)
 
-correct = timefunc(None, func_np, a, b)
-timefunc(correct, func_ne, a, b)
-print "with one thread"
-ne.set_num_threads(1)
-timefunc(correct, func_ne, a, b)
+# correct = timefunc(None, func_np, a, b)
+# timefunc(correct, func_ne, a, b)
+# print "with one thread"
+# ne.set_num_threads(1)
+# timefunc(correct, func_ne, a, b)
 
 # correct = timefunc(None, func_np, a, b, c)
 # timefunc(correct, func_ne, a, b, c)
