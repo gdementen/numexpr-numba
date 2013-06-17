@@ -1,3 +1,5 @@
+from __future__ import division
+
 import numexpr as ne
 from numexpr import NumExpr, E
 import numpy as np
@@ -8,8 +10,7 @@ import meta
 import ast
 
 print "using numba", __version__
-
-size = (1000, 1000)
+print "using numexpr", ne.__version__
 
 def timefunc(correct, func, *args, **kwargs):
     print func.__name__.ljust(20),
@@ -17,11 +18,18 @@ def timefunc(correct, func, *args, **kwargs):
     res = func(*args, **kwargs)
     failed = False
     if correct is not None:
-        if not np.allclose(res, correct):
+        if not np.all((np.isnan(res) & np.isnan(correct)) | (res == correct)):
+        # if not np.allclose(res, correct):
             failed = True
-            print "correct", correct, correct.dtype
-            print "res", res, res.dtype
-            print "diff", res - correct
+            print
+            print "correct"
+            print correct
+            print correct.dtype
+            print "res"
+            print res
+            print res.dtype
+            print "diff"
+            print res - correct
     # time it
     if failed:
         print "---- ms"
@@ -59,34 +67,76 @@ sum = np.sum
 # expr = 'abs(a - c + b)'
 # expr = '2.1 * a + 3.2 * b * b + 4.3 * c * c * c'
 # expr = 'sum(a + b + c, axis=0)'
+# expr = 'sum(a)'
 # expr = 'a & b & c' # works
 # expr = 'sum(a & b & c)' # fails
 # expr = 'sum(b)'
 # expr = '(a + 1) % (b + 3)'
-expr = 'a * b'
+# expr = 'a >= b'
+# expr = 'a**2 + b**2 + 2*a*b'
+# expr = 'a*a + b*b + 2*a*b'
+expr = 'a / b'
 
-def np_nopow(a, b): #, b, c):
+# def func_np(a):
+def func_np(a, b):
+# def func_np(a, b, c):
     return eval(expr)
 
-def ne_nopow(a, b): #, b, c):
+# def func_ne(a):
+def func_ne(a, b):
+# def func_ne(a, b, c):
     # res = ne.evaluate(expr, out=r)
     # assert res is r
     # return res
     return ne.evaluate(expr)
 
+# @autojit    
+# def func_nb(a, b):
+    # return a*a + b*b + 2*a*b
+#    return a**2 + b**2 + 2*a*b
+
+# BLOCK_SIZE1 = 128
+# BLOCK_SIZE2 = 8
+# str_list1 = [b'foo', b'bar', b'', b'  ']
+# str_list2 = [b'foo', b'', b'x', b' ']
+# str_nloops = len(str_list1) * (BLOCK_SIZE1 + BLOCK_SIZE2 + 1)
+# a = np.array(str_list1 * str_nloops)
+# b = np.array(str_list2 * str_nloops)
+# expr = 'a >= b'
+    
 # array_size = 100
 # a = np.arange(array_size, dtype=np.int) #[::2]
 # b = np.arange(array_size, dtype=np.float32) #/ array_size
     
 # a = np.arange(100.0)
 
+# size = (1000, 1000)
+size = (10,)
+
+# - withnan: sum([1.0, nan, 2.0], skip_na=False)
+# - qshow(withnan)
+# - assertTrue(withnan != withnan)
+# a = np.array([1.0, np.nan, 2.0])
+
+# x = func_ne(a)
+# print "nan?", x != x
+# y = ne.evaluate("x != x")
+# print "nan in numba?", y
+
+
 # a = np.random.randint(10, size=size)
-a = np.random.rand(*size)
+# a = np.arange(5)
+a = np.array([0, 1, 0, 3, 2]) 
+# a = np.random.rand(*size)
 # a = a < 5
-b = np.arange(1000, dtype=np.float64)
+
+# b = np.random.randint(10, size=size)
+b = np.array([0, 0, 1, 2, 3])
+# b = np.arange(1000, dtype=np.float64)
 # b = np.random.rand(*size)
 # b = b < 0.5
 # c = np.random.randint(10, size=size)
+# c = np.random.rand(*size)
 # c = c < 5
 
 # r = np.empty(size, dtype=np.float64)
@@ -116,23 +166,23 @@ def info(a):
 # c = np.random.rand(size)
 
 
-# correct = timefunc(None, np_nopow, a)
-# timefunc(correct, ne_nopow, a)
+# correct = timefunc(None, func_np, a)
+# timefunc(correct, func_ne, a)
 # print "with one thread"
 # ne.set_num_threads(1)
-# timefunc(correct, ne_nopow, a)
+# timefunc(correct, func_ne, a)
 
-correct = timefunc(None, np_nopow, a, b)
-timefunc(correct, ne_nopow, a, b)
+correct = timefunc(None, func_np, a, b)
+timefunc(correct, func_ne, a, b)
 print "with one thread"
 ne.set_num_threads(1)
-timefunc(correct, ne_nopow, a, b)
+timefunc(correct, func_ne, a, b)
 
-# correct = timefunc(None, np_nopow, a, b, c)
-# timefunc(correct, ne_nopow, a, b, c)
+# correct = timefunc(None, func_np, a, b, c)
+# timefunc(correct, func_ne, a, b, c)
 # print "with one thread"
 # ne.set_num_threads(1)
-# timefunc(correct, ne_nopow, a, b, c)
+# timefunc(correct, func_ne, a, b, c)
 
 # func = NumExpr(E.a)
 # x = np.arange(100.0)
