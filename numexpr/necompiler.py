@@ -15,10 +15,12 @@ from ctypes import pythonapi, c_void_p
 import threading
 
 import numpy as np
-from numba import autojit
+from numba import autojit, double as numba_double
 import meta
 
-from numexpr import expressions, use_vml
+# is_cpu_amd_intel is imported *from here* by pytables :(
+from numexpr import expressions, use_vml, is_cpu_amd_intel
+
 from numexpr.utils import CacheDict
 from numexpr import utils
 
@@ -127,7 +129,7 @@ def getContext(kwargs, frame_depth=1):
 
 class ArraySubscripter(ast.NodeTransformer):
     def visit_Name(self, node):
-        if node.id not in py_funcs and node.id not in ('imag', 'real', 'abs'):
+        if node.id not in py_funcs and node.id not in ('imag', 'real', 'abs', 'double'):
             # print node.id
             new_node = ast.Subscript(node,
                                      ast.Index(ast.Name('i', ast.Load())),
@@ -218,6 +220,7 @@ py_funcs = {
 
     'copy': np.copy,
     'ones_like': np.ones_like,
+    'double': numba_double,
 }
     
 

@@ -241,6 +241,11 @@ def div_op(a, b):
             return OpNode('mul', [a, ConstantNode(1./b.value)])
     return OpNode('div', [a,b])
 
+def cast(node, dtype):
+    # Assumes there is a function named like each type. For double, this is
+    # the case.
+    return FuncNode(dtype, (node,), dtype)
+
 @ophelper
 def truediv_op(a, b):
     if get_optimization() in ('moderate', 'aggressive'):
@@ -251,6 +256,10 @@ def truediv_op(a, b):
     kind = commonKind([a, b])
     if kind in ('bool', 'int', 'long'):
         kind = 'double'
+        # force a cast
+        a = cast(a, 'double')
+        b = cast(b, 'double')
+
     return OpNode('div', [a, b], kind=kind)
 
 @ophelper
@@ -344,6 +353,7 @@ func_defs = {
 
 functions = dict((k, func(*v)) for k, v in func_defs.items())
 functions.update({
+    'double': (numpy.double,),
     'real': (numpy.real, 'double', 'double'),
     'imag': (numpy.imag, 'double', 'double'),
     'where' : where_func,
@@ -457,10 +467,13 @@ class VariableNode(LeafNode):
 class ConstantNode(LeafNode):
     astType = 'constant'
     def __init__(self, value=None, children=None):
-        kind = getKind(value)
-        # Python float constants are double precision by default
-        if kind == 'float':
-            kind = 'double'
+        if value is not None:
+            kind = getKind(value)
+            # Python float constants are double precision by default
+            if kind == 'float':
+                kind = 'double'
+        else:
+            kind = None
         LeafNode.__init__(self, value=value, kind=kind)
     def __neg__(self):
         return ConstantNode(-self.value)
@@ -547,4 +560,4 @@ class FuncNode(OpNode):
         else:
             return ast.Call(ast.Name(self.value, ast.Load()), args, [],
                             None, None)
-        
+
