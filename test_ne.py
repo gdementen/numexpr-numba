@@ -76,7 +76,8 @@ sum = np.sum
 # expr = 'a**2 + b**2 + 2*a*b'
 # expr = 'a*a + b*b + 2*a*b'
 # expr = 'a / b'
-expr = 'a != a'
+# expr = 'a != a'
+expr = 'a / 2'
 
 def func_np(a):
 # def func_np(a, b):
@@ -117,17 +118,17 @@ size = (10,)
 # - withnan: sum([1.0, nan, 2.0], skip_na=False)
 # - qshow(withnan)
 # - assertTrue(withnan != withnan)
-a = np.array([1.0, np.nan, 2.0])
+# a = np.array([1.0, np.nan, 2.0])
 
-print "nan?", a != a
-y = ne.evaluate("a != a")
-print "nan in numba?", y
+# print "nan?", a != a
+# y = ne.evaluate("a != a")
+# print "nan in numba?", y
 
 
 # a = np.random.randint(10, size=size)
 # a = np.arange(5)
 # a = np.array([0, 1, 0, 3, 2]) 
-# a = np.random.rand(*size)
+a = np.random.rand(*size)
 # a = a < 5
 
 # b = np.random.randint(10, size=size)
@@ -166,11 +167,11 @@ def info(a):
 # c = np.random.rand(size)
 
 
-# correct = timefunc(None, func_np, a)
-# timefunc(correct, func_ne, a)
-# print "with one thread"
-# ne.set_num_threads(1)
-# timefunc(correct, func_ne, a)
+correct = timefunc(None, func_np, a)
+timefunc(correct, func_ne, a)
+print "with one thread"
+ne.set_num_threads(1)
+timefunc(correct, func_ne, a)
 
 # correct = timefunc(None, func_np, a, b)
 # timefunc(correct, func_ne, a, b)
