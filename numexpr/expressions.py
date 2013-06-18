@@ -522,7 +522,8 @@ class OpNode(ExpressionNode):
             # 'or': ast.BitOr 
         }
         op = self.value
-        args = [c.toPython() for c in self.children]
+        ch = self.children
+        args = [c.toPython() for c in ch]
         if op in unaryops:
             arg = args[0]
             # force conversion to int to workaround numba #238
@@ -533,7 +534,6 @@ class OpNode(ExpressionNode):
         elif op in boolops:
             return ast.BoolOp(boolops[op](), args)
         elif op in cmpops:
-            ch = self.children
             # Transform "var != var" to "not (var == var)". This is a
             # workaround for numba issue #247 "(a != a) is False for nan"
             # This is a weak workaround because it will only work for simple 
@@ -550,7 +550,8 @@ class OpNode(ExpressionNode):
         else:
             binop = ast.BinOp(args[0], binops[op](), args[1])
             # shield against integer division by 0
-            if op == 'div' and self.children[1].astKind in ('int', 'long'):
+            if (op == 'div' and ch[1].astKind in ('int', 'long') and
+                ch[1].astType != 'constant'):
                 return ast.IfExp(args[1], binop, ast.Num(0))
             return binop
 
