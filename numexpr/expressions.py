@@ -533,7 +533,18 @@ class OpNode(ExpressionNode):
         elif op in boolops:
             return ast.BoolOp(boolops[op](), args)
         elif op in cmpops:
-            return ast.Compare(args[0], [cmpops[op]()], [args[1]])
+            ch = self.children
+            # Transform "var != var" to "not (var == var)". This is a
+            # workaround for numba issue #247 "(a != a) is False for nan"
+            # This is a weak workaround because it will only work for simple 
+            # variable, while it should work for all expressions that return
+            # nans on both sides.
+            if (ch[0].astType == 'variable' and ch[1].astType == 'variable' and
+                ch[0].value == ch[1].value and op == 'ne'):
+                comparison = ast.Compare(args[0], [cmpops['eq']()], [args[1]])
+                return ast.UnaryOp(ast.Not(), comparison)
+            else:
+                return ast.Compare(args[0], [cmpops[op]()], [args[1]])
         elif op == 'ones_like':
             return ast.Num(1)
         else:
