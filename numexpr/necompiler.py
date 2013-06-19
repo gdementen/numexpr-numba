@@ -15,7 +15,7 @@ from ctypes import pythonapi, c_void_p
 import threading
 
 import numpy as np
-from numba import autojit, double as numba_double
+from numba import jit, void, b1, i4, i8, f4, f8, c8, string_
 import meta
 
 # is_cpu_amd_intel is imported *from here* by pytables :(
@@ -37,6 +37,8 @@ typecode_to_kind = {'b': 'bool', 'i': 'int', 'l': 'long', 'f': 'float',
                     'd': 'double', 'c': 'complex', 's': 'bytes', 'n' : 'none'}
 kind_to_typecode = {'bool': 'b', 'int': 'i', 'long': 'l', 'float': 'f',
                     'double': 'd', 'complex': 'c', 'bytes': 's', 'none' : 'n'}
+type_to_numba = {bool: b1, int_: i4, long_: i8, float: f4,
+                 double: f8, complex: c8, bytes: string_}
 type_to_typecode = {bool: 'b', int_: 'i', long_:'l', float:'f',
                     double: 'd', complex: 'c', bytes: 's'}
 type_to_kind = expressions.type_to_kind
@@ -220,7 +222,7 @@ py_funcs = {
 
     'copy': np.copy,
     'ones_like': np.ones_like,
-    'double': numba_double,
+    'double': f8,
 }
     
 
@@ -264,8 +266,12 @@ def precompile(ex, signature=(), context={}):
     ast_expr = ex.toPython()
     # print ast.dump(ast_expr, annotate_fields=False)
     ast_func = ast_expr_to_ast_func(ast_expr, argnames)
+    inner_func = ast_func_to_func(ast_func)
     # print ast.dump(ast_func, annotate_fields=False)
-    inner_func = autojit(ast_func_to_func(ast_func), nopython=True)
+    full_sig = [('__result__', dt)] + signature
+    arg_types = [type_to_numba[type_] for name, type_ in full_sig]
+    jit_signature = void(*[t[:] for t in arg_types])
+    inner_func_nb = jit(jit_signature, nopython=True)(inner_func)
 
     if reduction_func is not None:
         # this is a hack. To do it (more) correctly (with multithreading),
@@ -283,7 +289,7 @@ def precompile(ex, signature=(), context={}):
             shape = args[0].shape
             args = [a.ravel() for a in args]
             tmp_out = np.empty(shape, dtype=dt)
-            inner_func(tmp_out.ravel(), *args)
+            inner_func_nb(tmp_out.ravel(), *args)
             
             # workaround for numba bug
             if dt is bool:
@@ -304,7 +310,7 @@ def precompile(ex, signature=(), context={}):
             if out is None:
                 out = np.empty(shape, dtype=dt)
             #XXX: let's hope this does not trigger a copy
-            inner_func(out.ravel(), *flat_args)
+            inner_func_nb(out.ravel(), *flat_args)
             # workaround for numba bug
             if dt is bool:
                 out = out.astype(np.uint8, copy=False).astype(np.bool)
@@ -331,18 +337,15 @@ def precompile(ex, signature=(), context={}):
             length = len(args[0])
             chunklen = (length + 1) // numthreads
             
-            # make sure the function is first compiled by the main thread
-            inner_func(*[arg[:1] for arg in args])
-
             chunks = [[arg[i * chunklen:(i + 1) * chunklen] for arg in args]
                       for i in range(numthreads)]
-            threads = [threading.Thread(target=inner_func, args=chunk)
+            threads = [threading.Thread(target=inner_func_nb, args=chunk)
                        for chunk in chunks[:-1]]
             for thread in threads:
                 thread.start()
 
             # the main thread handles the last chunk
-            inner_func(*chunks[-1])
+            inner_func_nb(*chunks[-1])
 
             for thread in threads:
                 thread.join()
