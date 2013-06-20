@@ -253,10 +253,6 @@ def precompile(ex, signature=(), context={}):
         argnames = get_argnames(ex)
         signature = [(name, double) for name in argnames]
 
-    #FIXME: this does not work for "bytes"
-#    use kind_to_type
-    dt = getattr(np, ex.astKind)
-
     if ex.value in ('sum', 'prod'):
         reduction_func = getattr(np, ex.value)
         args = ex.children
@@ -273,7 +269,8 @@ def precompile(ex, signature=(), context={}):
     ast_func = ast_expr_to_ast_func(ast_expr, argnames)
     inner_func = ast_func_to_func(ast_func)
     # print ast.dump(ast_func, annotate_fields=False)
-    full_sig = [('__result__', dt)] + signature
+    res_type = kind_to_type[ex.astKind]
+    full_sig = [('__result__', res_type)] + signature
     arg_types = [type_to_numba[type_] for name, type_ in full_sig]
     jit_signature = void(*[t[:] for t in arg_types])
     inner_func_nb = jit(jit_signature, nopython=True)(inner_func)
@@ -293,11 +290,11 @@ def precompile(ex, signature=(), context={}):
 
             shape = args[0].shape
             args = [a.ravel() for a in args]
-            tmp_out = np.empty(shape, dtype=dt)
+            tmp_out = np.empty(shape, dtype=res_type)
             inner_func_nb(tmp_out.ravel(), *args)
             
             # workaround for numba bug
-            if dt is bool:
+            if res_type is bool:
                 tmp_out = tmp_out.astype(np.uint8, copy=False).astype(np.bool)
             
             return reduction_func(tmp_out, axis=axis)
@@ -313,11 +310,11 @@ def precompile(ex, signature=(), context={}):
             args = [a.ravel() for a in args]
             out = kwargs.pop('out', None)
             if out is None:
-                out = np.empty(shape, dtype=dt)
+                out = np.empty(shape, dtype=res_type)
             #XXX: let's hope this does not trigger a copy
             inner_func_nb(out.ravel(), *flat_args)
             # workaround for numba bug
-            if dt is bool:
+            if res_type is bool:
                 out = out.astype(np.uint8, copy=False).astype(np.bool)
             return out
 
@@ -330,7 +327,7 @@ def precompile(ex, signature=(), context={}):
             
             out = kwargs.pop('out', None)
             if out is None:
-                out = np.empty(shape, dtype=dt)
+                out = np.empty(shape, dtype=res_type)
 
             # "flatten" arguments
 
@@ -355,7 +352,7 @@ def precompile(ex, signature=(), context={}):
             for thread in threads:
                 thread.join()
             # workaround for numba bug
-            if dt is bool:
+            if res_type is bool:
                 out = out.astype(np.uint8, copy=False).astype(np.bool)
             return out
          
