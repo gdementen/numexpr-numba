@@ -237,19 +237,24 @@ def ast_func_to_func(ast_func):
 def precompile(ex, signature=(), context={}):
     """Compile the expression to an intermediate form.
     """
-    types = dict(signature)
     if isinstance(ex, (str, unicode)):
         #XXX: we might want to work directly with (python's) AST
         # and do numexpr transformations directly at that level instead of going
         # str -> Expression -> ast -> ...
+        types = dict(signature)
         ex = stringToExpression(ex, types, context)
 
     if signature:
         argnames = [name for (name, type_) in signature]
     else:
+        # this can only occur when NumExpr() is called directly without
+        # signature, and in that case we have no other choice than use
+        # the default type for all arguments (double)
         argnames = get_argnames(ex)
-    
+        signature = [(name, double) for name in argnames]
+
     #FIXME: this does not work for "bytes"
+#    use kind_to_type
     dt = getattr(np, ex.astKind)
 
     if ex.value in ('sum', 'prod'):
