@@ -15,7 +15,7 @@ from ctypes import pythonapi, c_void_p
 import threading
 
 import numpy as np
-from numba import jit, void, b1, i4, i8, f4, f8, c8, string_
+from numba import jit, void, b1, i4, i8, f4, f8, c16, string_
 import meta
 
 # is_cpu_amd_intel is imported *from here* by pytables :(
@@ -38,7 +38,7 @@ typecode_to_kind = {'b': 'bool', 'i': 'int', 'l': 'long', 'f': 'float',
 kind_to_typecode = {'bool': 'b', 'int': 'i', 'long': 'l', 'float': 'f',
                     'double': 'd', 'complex': 'c', 'bytes': 's', 'none' : 'n'}
 type_to_numba = {bool: b1, int_: i4, long_: i8, float: f4,
-                 double: f8, complex: c8, bytes: string_}
+                 double: f8, complex: c16, bytes: string_}
 type_to_typecode = {bool: 'b', int_: 'i', long_:'l', float:'f',
                     double: 'd', complex: 'c', bytes: 's'}
 type_to_kind = expressions.type_to_kind
