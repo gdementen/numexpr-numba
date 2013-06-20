@@ -292,11 +292,6 @@ def precompile(ex, signature=(), context={}):
             args = [a.ravel() for a in args]
             tmp_out = np.empty(shape, dtype=res_type)
             inner_func_nb(tmp_out.ravel(), *args)
-            
-            # workaround for numba bug
-            if res_type is bool:
-                tmp_out = tmp_out.astype(np.uint8, copy=False).astype(np.bool)
-            
             return reduction_func(tmp_out, axis=axis)
         return func
     else:
@@ -313,9 +308,6 @@ def precompile(ex, signature=(), context={}):
                 out = np.empty(shape, dtype=res_type)
             #XXX: let's hope this does not trigger a copy
             inner_func_nb(out.ravel(), *flat_args)
-            # workaround for numba bug
-            if res_type is bool:
-                out = out.astype(np.uint8, copy=False).astype(np.bool)
             return out
 
         def func_mt(*args, **kwargs):
@@ -351,9 +343,6 @@ def precompile(ex, signature=(), context={}):
 
             for thread in threads:
                 thread.join()
-            # workaround for numba bug
-            if res_type is bool:
-                out = out.astype(np.uint8, copy=False).astype(np.bool)
             return out
          
         return func_mt
