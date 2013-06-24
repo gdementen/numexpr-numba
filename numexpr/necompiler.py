@@ -293,60 +293,60 @@ def precompile(ex, signature=(), context={}):
             tmp_out = np.empty(shape, dtype=res_type)
             inner_func_nb(tmp_out.ravel(), *args)
             return reduction_func(tmp_out, axis=axis)
-        return func
     else:
         def func(*args, **kwargs):
-            # order, casting, ex_uses_vml
-            shape = args[0].shape
-            # we cannot use order="K" which is most efficient, in case arguments
-            # have not the same in-memory layout, because we need the same
-            # target memory layout for all arguments.
-            #XXX: can't we test for that and convert only if really necessary?
-            args = [a.ravel() for a in args]
-            out = kwargs.pop('out', None)
-            if out is None:
-                out = np.empty(shape, dtype=res_type)
-            #XXX: let's hope this does not trigger a copy
-            inner_func_nb(out.ravel(), *flat_args)
-            return out
-
-        def func_mt(*args, **kwargs):
             numthreads = utils.num_threads
-            shape = args[0].shape
-            if any(arg.shape != shape for arg in args[1:]):
-                args = np.broadcast_arrays(*args) 
+            # only scalars
+            if any(isinstance(arg, np.ndarray) for arg in args):
                 shape = args[0].shape
+                if any(arg.shape != shape for arg in args[1:]):
+                    args = np.broadcast_arrays(*args) 
+                    shape = args[0].shape
             
-            out = kwargs.pop('out', None)
-            if out is None:
-                out = np.empty(shape, dtype=res_type)
+                out = kwargs.pop('out', None)
+                if out is None:
+                    out = np.empty(shape, dtype=res_type)
 
-            # "flatten" arguments
+                # "flatten" arguments
 
-            # we cannot use order="K" which is most efficient, in case arguments
-            # have not the same in-memory layout, because we need the same
-            # target memory layout for all arguments.
-            #XXX: can't we test for that and convert only if really necessary?
-            args = [out.ravel()] + [a.ravel() for a in args]
-            length = len(args[0])
-            chunklen = (length + 1) // numthreads
-            
-            chunks = [[arg[i * chunklen:(i + 1) * chunklen] for arg in args]
-                      for i in range(numthreads)]
-            threads = [threading.Thread(target=inner_func_nb, args=chunk)
-                       for chunk in chunks[:-1]]
-            for thread in threads:
-                thread.start()
+                # we cannot use order="K" which is most efficient, in case arguments
+                # have not the same in-memory layout, because we need the same
+                # target memory layout for all arguments.
+                #XXX: can't we test for that and convert only if really necessary?
+                args = [out.ravel()] + [a.ravel() for a in args]
+                length = len(args[0])
+                # TODO: it might be better to make sure the starting bounds
+                #       are aligned to X bytes
+                # TODO: it might be better to not multithread at all if
+                #       length < THRESHOLD
+                chunklen = (length + numthreads - 1) // numthreads
+                bounds = [(i * chunklen, min((i + 1) * chunklen, length))
+                          for i in range(numthreads)]
+                assert bounds[-1][1] == length
+                chunks = [[arg[start:stop] for arg in args]
+                           for start, stop in bounds]
+                threads = [threading.Thread(target=inner_func_nb, args=chunk)
+                           for chunk in chunks[:-1]]
+                for thread in threads:
+                    thread.start()
 
-            # the main thread handles the last chunk
-            inner_func_nb(*chunks[-1])
+                # the main thread handles the last chunk
+                inner_func_nb(*chunks[-1])
 
-            for thread in threads:
-                thread.join()
-            return out
-         
-        return func_mt
-        # return func
+                for thread in threads:
+                    thread.join()
+                return out
+            else:
+                # all arguments are scalar
+                out = np.empty(1, dtype=res_type)
+                args = [out] + [np.array([a]) for a in args]
+                inner_func_nb(*args)
+                return out[0]
+
+    def run(*args, **kwargs):
+        return func(*args, **kwargs)
+    func.run = run
+    return func
     
 
 
