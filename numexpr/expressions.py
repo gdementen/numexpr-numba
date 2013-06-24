@@ -547,6 +547,10 @@ class OpNode(ExpressionNode):
                 return ast.Compare(args[0], [cmpops[op]()], [args[1]])
         elif op == 'ones_like':
             return ast.Num(1)
+        elif op == 'real':
+            return ast.Attribute(args[0], 'real', ast.Load())
+        elif op == 'imag':
+            return ast.Attribute(args[0], 'imag', ast.Load())
         else:
             binop = ast.BinOp(args[0], binops[op](), args[1])
             # shield against integer division by 0
