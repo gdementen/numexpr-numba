@@ -573,6 +573,12 @@ class FuncNode(OpNode):
             return ast.Attribute(args[0], 'real', ast.Load())
         elif self.value == "imag":
             return ast.Attribute(args[0], 'imag', ast.Load())
+        elif self.value == 'copy':
+            assert len(args) == 1
+            # implement copy as a no-op
+            return args[0]
+        elif self.value == 'ones_like':
+            return ast.Num(1)
         else:
             return ast.Call(ast.Name(self.value, ast.Load()), args, [],
                             None, None)
